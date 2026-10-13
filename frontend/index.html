@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TerraChain | Decentralized Land & Property Registry</title>
+  <meta name="description" content="Immutable Ethereum smart contract powered Land and Property Title Registry with fraud prevention and permanent ownership history.">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- Ethers.js v6 CDN as specified in README -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+</head>
+<body>
+  <!-- Background Glow & Grid -->
+  <div class="bg-glow"></div>
+  <div class="bg-grid"></div>
+
+  <!-- Header / Navigation Bar -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="logo-area">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+            <polyline points="2 17 12 22 22 17"></polyline>
+            <polyline points="2 12 12 17 22 12"></polyline>
+          </svg>
+        </div>
+        <div>
+          <h1 class="logo-title">TerraChain</h1>
+          <span class="logo-subtitle">Land Title & Property Registry</span>
+        </div>
+      </div>
+
+      <div class="header-controls">
+        <div class="network-badge" id="networkBadge">
+          <span class="status-dot"></span>
+          <span id="networkName">Hardhat Local (31337)</span>
+        </div>
+
+        <div class="contract-pill" id="contractPill" title="Click to inspect/change contract address">
+          <span class="pill-label">Contract:</span>
+          <span class="pill-address" id="contractDisplay">Loading...</span>
+          <button class="icon-btn-inline" id="editContractBtn" title="Set Contract Address">⚙️</button>
+        </div>
+
+        <div class="wallet-section">
+          <button class="btn btn-connect" id="connectWalletBtn">
+            <svg class="metamask-fox" viewBox="0 0 32 32" fill="none">
+              <path d="M29.5 7.5L17.5 1.5C16.6 1 15.4 1 14.5 1.5L2.5 7.5C1.6 8 1 9 1 10.1V21.9C1 23 1.6 24 2.5 24.5L14.5 30.5C15 30.7 15.5 30.8 16 30.8C16.5 30.8 17 30.7 17.5 30.5L29.5 24.5C30.4 24 31 23 31 21.9V10.1C31 9 30.4 8 29.5 7.5Z" stroke="#f6851b" stroke-width="2"/>
+            </svg>
+            <span id="connectBtnText">Connect MetaMask</span>
+          </button>
+          
+          <div class="account-card hidden" id="accountCard">
+            <div class="account-avatar" id="accountAvatar">0x</div>
+            <div class="account-meta">
+              <div class="account-row">
+                <span class="account-address" id="account">0x000...000</span>
+                <button class="copy-btn" id="copyAddressBtn" title="Copy Address">📋</button>
+              </div>
+              <div class="role-pill" id="roleBadge">Visitor</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <!-- Top Stats Banner -->
+    <section class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">🏡</div>
+        <div>
+          <div class="stat-value" id="statTotalProperties">0</div>
+          <div class="stat-label">Registered Parcels</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📜</div>
+        <div>
+          <div class="stat-value" id="statTotalTransfers">0</div>
+          <div class="stat-label">Ownership Transfers</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📐</div>
+        <div>
+          <div class="stat-value" id="statTotalArea">0 sq ft</div>
+          <div class="stat-label">Total Verified Area</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🛡️</div>
+        <div>
+          <div class="stat-value" id="statSecurity">100% On-Chain</div>
+          <div class="stat-label">Double-Selling Immune</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quick Demo Accounts Helper Bar -->
+    <section class="demo-bar">
+      <div class="demo-bar-title">
+        <span>⚡ Quick Test Profiles (Hardhat Node Default Accounts):</span>
+      </div>
+      <div class="demo-accounts-list">
+        <button class="demo-chip" onclick="fillTestAccount('registrar')">
+          <span class="chip-badge reg">Registrar</span> Account #0
+        </button>
+        <button class="demo-chip" onclick="fillTestAccount('rahul')">
+          <span class="chip-badge owner">Rahul (Buyer/Seller)</span> Account #1
+        </button>
+        <button class="demo-chip" onclick="fillTestAccount('priya')">
+          <span class="chip-badge buyer">Priya (Buyer)</span> Account #2
+        </button>
+        <button class="demo-chip" onclick="fillTestAccount('amit')">
+          <span class="chip-badge other">Amit (3rd Party)</span> Account #3
+        </button>
+      </div>
+    </section>
+
+    <!-- Navigation Tabs -->
+    <nav class="action-tabs">
+      <button class="tab-btn active" data-tab="searchTab">
+        <span class="tab-icon">🔍</span>
+        <span>Search & Verify Property</span>
+      </button>
+      <button class="tab-btn" data-tab="registerTab">
+        <span class="tab-icon">🏛️</span>
+        <span>Register Property</span>
+        <span class="tab-role-tag registrar-tag">Registrar Only</span>
+      </button>
+      <button class="tab-btn" data-tab="transferTab">
+        <span class="tab-icon">🔁</span>
+        <span>Transfer Ownership</span>
+        <span class="tab-role-tag owner-tag">Owner Only</span>
+      </button>
+      <button class="tab-btn" data-tab="directoryTab">
+        <span class="tab-icon">📋</span>
+        <span>Property Registry Explorer</span>
+      </button>
+    </nav>
+
+    <!-- Tab 1: Search & Verify -->
+    <section class="tab-content active" id="searchTab">
+      <div class="glass-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">Verify Property Title & Chain of Custody</h2>
+            <p class="panel-desc">Query the smart contract directly. Free read-only on-chain call (no gas / no signature needed).</p>
+          </div>
+          <div class="quick-examples">
+            <span class="text-muted">Sample IDs:</span>
+            <button class="chip-sm" onclick="quickSearch('PROP-101')">PROP-101</button>
+            <button class="chip-sm" onclick="quickSearch('PROP-102')">PROP-102</button>
+          </div>
+        </div>
+
+        <form id="searchForm" class="search-bar-form" onsubmit="handleSearch(event)">
+          <div class="search-input-wrap">
+            <span class="search-icon">🔎</span>
+            <input type="text" id="searchPropertyId" placeholder="Enter Property ID (e.g. PROP-101)" required>
+          </div>
+          <button type="submit" class="btn btn-primary" id="searchBtn">
+            <span>Query Blockchain</span>
+          </button>
+        </form>
+
+        <!-- Search Result Container -->
+        <div id="searchResultArea" class="search-result-area hidden">
+          <div class="property-header-card">
+            <div class="property-badge-row">
+              <span class="verified-pill">✔ Officially Registered</span>
+              <span class="id-pill" id="resultPropertyId">PROP-101</span>
+            </div>
+            
+            <div class="property-specs-grid">
+              <div class="spec-item">
+                <span class="spec-label">Geographic Location</span>
+                <span class="spec-val" id="resultLocation">-</span>
+              </div>
+              <div class="spec-item">
+                <span class="spec-label">Parcel Land Area</span>
+                <span class="spec-val" id="resultArea">- sq ft</span>
+              </div>
+              <div class="spec-item full-width">
+                <span class="spec-label">Current Legal Owner (Wallet)</span>
+                <div class="address-box">
+                  <span class="font-mono text-cyan" id="resultOwner">-</span>
+                  <button class="copy-btn" onclick="copyText(document.getElementById('resultOwner').innerText)">📋</button>
+                  <span class="owner-status-tag" id="resultOwnerBadge">Active Titleholder</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ownership History Timeline -->
+          <div class="history-section">
+            <h3 class="section-title">
+              <span>⛓️ Immutable Ownership History Timeline</span>
+              <span class="history-count-badge" id="historyCount">0 Transfers</span>
+            </h3>
+            <div class="timeline" id="historyTimeline">
+              <!-- Timeline items dynamically generated here -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 2: Register Property (Registrar Only) -->
+    <section class="tab-content" id="registerTab">
+      <div class="glass-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">Register New Real Estate Property</h2>
+            <p class="panel-desc">Only the Government Registrar (Contract Deployer) can execute initial registrations on-chain.</p>
+          </div>
+          <button class="btn btn-outline-sm" type="button" onclick="prefillRegisterDemo()">Fill Demo Data</button>
+        </div>
+
+        <div class="alert-box alert-info" id="registrarRoleNotice">
+          <span class="alert-icon">ℹ️</span>
+          <div>
+            <strong>Registrar Role Check:</strong> Only the deployer address (<span class="font-mono text-cyan" id="registrarAddressNotice">checking...</span>) has permission to invoke <code>registerProperty</code>.
+          </div>
+        </div>
+
+        <form id="registerForm" onsubmit="handleRegister(event)" class="grid-form">
+          <div class="form-group">
+            <label for="regId">Unique Property ID <span class="req">*</span></label>
+            <input type="text" id="regId" placeholder="e.g. PROP-101" required>
+            <small class="form-hint">Must be globally unique on the blockchain ledger.</small>
+          </div>
+
+          <div class="form-group">
+            <label for="regArea">Parcel Area (sq ft) <span class="req">*</span></label>
+            <input type="number" id="regArea" placeholder="e.g. 1200" min="1" required>
+            <small class="form-hint">Total surveyed area in square feet.</small>
+          </div>
+
+          <div class="form-group full-width">
+            <label for="regLocation">Location / Address <span class="req">*</span></label>
+            <input type="text" id="regLocation" placeholder="e.g. Andheri West, Mumbai, Maharashtra" required>
+            <small class="form-hint">Physical cadastral address or survey plot location.</small>
+          </div>
+
+          <div class="form-group full-width">
+            <label for="regOwner">Initial Allottee / Owner Ethereum Address <span class="req">*</span></label>
+            <input type="text" id="regOwner" placeholder="0x..." pattern="^0x[a-fA-F0-9]{40}$" required>
+            <small class="form-hint">The initial legal titleholder's 42-character wallet address.</small>
+          </div>
+
+          <div class="form-actions full-width">
+            <button type="submit" class="btn btn-primary" id="btnRegisterSubmit">
+              <span>Deploy Property Title to Blockchain</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- Tab 3: Transfer Ownership (Current Owner Only) -->
+    <section class="tab-content" id="transferTab">
+      <div class="glass-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">Transfer Property Ownership</h2>
+            <p class="panel-desc">Only the current verified owner of the property can initiate a deed transfer. Double-selling is cryptographically blocked.</p>
+          </div>
+          <button class="btn btn-outline-sm" type="button" onclick="prefillTransferDemo()">Fill Demo Transfer</button>
+        </div>
+
+        <div class="alert-box alert-warning">
+          <span class="alert-icon">⚠️</span>
+          <div>
+            <strong>Smart Contract Enforced Security:</strong> If your connected MetaMask wallet is not the current recorded owner, the EVM will revert the transaction with <code>"Only current owner can transfer"</code>.
+          </div>
+        </div>
+
+        <form id="transferForm" onsubmit="handleTransfer(event)" class="grid-form">
+          <div class="form-group">
+            <label for="transId">Property ID to Transfer <span class="req">*</span></label>
+            <input type="text" id="transId" placeholder="e.g. PROP-101" required onchange="checkOwnerOnFieldChange(this.value)">
+            <small class="form-hint" id="transCurrentOwnerHint">Current recorded owner will be verified.</small>
+          </div>
+
+          <div class="form-group">
+            <label for="transPrice">Sale Consideration / Price (ETH or INR Value) <span class="req">*</span></label>
+            <input type="number" id="transPrice" placeholder="e.g. 8500000" min="1" required>
+            <small class="form-hint">Must be greater than 0. Recorded permanently in ledger history.</small>
+          </div>
+
+          <div class="form-group full-width">
+            <label for="transNewOwner">Recipient / New Owner Ethereum Address <span class="req">*</span></label>
+            <input type="text" id="transNewOwner" placeholder="0x..." pattern="^0x[a-fA-F0-9]{40}$" required>
+            <small class="form-hint">Must be a valid Ethereum address and different from current owner.</small>
+          </div>
+
+          <div class="form-actions full-width">
+            <button type="submit" class="btn btn-primary btn-transfer" id="btnTransferSubmit">
+              <span>Sign & Execute Title Transfer</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- Tab 4: Directory / Explorer -->
+    <section class="tab-content" id="directoryTab">
+      <div class="glass-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">Decentralized Property Registry Directory</h2>
+            <p class="panel-desc">All registered properties on the smart contract ledger.</p>
+          </div>
+          <button class="btn btn-outline-sm" onclick="loadAllProperties()">🔄 Refresh Ledger</button>
+        </div>
+
+        <div id="directoryContainer" class="directory-grid">
+          <div class="loading-state">Loading registry records from blockchain...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Educational Callout: Why Solidity Prevents Fraud -->
+    <section class="security-explainer-card">
+      <div class="explainer-icon">🔒</div>
+      <div class="explainer-text">
+        <h3>How Blockchain Eliminates Property Title Fraud</h3>
+        <p>In traditional registries, double-selling occurs when corrupted databases or fake paper deeds allow one property to be sold simultaneously to two buyers. On Ethereum, the smart contract's modifier <code>require(msg.sender == p.currentOwner)</code> validates cryptographic ECDSA digital signatures at the consensus layer: once Rahul transfers <code>PROP-101</code> to Priya, Priya's public key is the sole address capable of ever signing another transfer. Any second attempt by Rahul is rejected unconditionally by every node on the network.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Contract Settings Modal -->
+  <div class="modal-backdrop hidden" id="contractModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Smart Contract Configuration</h3>
+        <button class="modal-close" onclick="closeContractModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <label for="customContractInput">Contract Address (0x...):</label>
+        <input type="text" id="customContractInput" class="full-input" placeholder="0x5FbDB2315678afecb367f032d93F642f64180aa3">
+        <p class="modal-hint">When you run <code>npx hardhat run scripts/deploy.js --network localhost</code>, the contract info is automatically saved to <code>contract-info.json</code>. You can also paste any deployed address here.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-sm" onclick="closeContractModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveCustomContract()">Save & Connect</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- App Script -->
+  <script src="app.js"></script>
+</body>
+</html>
