@@ -7,6 +7,7 @@
     "test": "hardhat test",
     "node": "hardhat node",
     "deploy": "hardhat run scripts/deploy.js --network localhost",
+    "refill": "hardhat run scripts/refill.js --network localhost",
     "serve": "npx serve frontend -p 3000"
   },
   "keywords": [],
